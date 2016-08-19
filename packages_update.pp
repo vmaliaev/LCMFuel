@@ -14,6 +14,7 @@
 #
 #
 #    Update packages with versions from the hiera as a source (override/common)
+#    Keys of group_versions dict should have a form of regexp
 #
 #    For example:
 #    static_versions:
@@ -21,10 +22,10 @@
 #      libcurl3 : '7.35.0-1ubuntu2.8'
 #      mc : latest
 #    group_versions:
-#      apache2* : '2.4.7_1ubuntu4.13'
-#      grub* : latest
+#      ^.*apache2.*$ : '2.4.7_1ubuntu4.13'
+#      ^grub-[b,d].*$ : latest
 
-$ensure_attribute = "ensure"
+$ensure_attribute = "ensure" # This is a parameter for package_resource
 $static_packages  = hiera_hash("static_versions")
 $group_packages   = hiera_hash("group_versions")
 validate_hash($static_packages)
@@ -35,64 +36,19 @@ notice("Proceed with the following hash of packages: ")
 notice($static_packages)
 notice($group_packages)
 
-
+# Create a hash for static_packages
 $static_packages_hash = hash(zip(keys($static_packages), getarrayhash("$ensure_attribute",values($static_packages))))
 notice("Resulted static_packages_hash to implement:")
 notice($static_packages_hash)
 validate_hash($static_packages_hash)
 
-
-
-$group_packages_hash = getpackagegrouphash($group_packages, keys($static_packages), $::osfamily)
+# Create a hash for package groups
+$initial_group_hash = getpackagegrouphash($group_packages, keys($static_packages))
+$group_packages_hash = hash(zip(keys($initial_group_hash), getarrayhash("$ensure_attribute",values($initial_group_hash))))
 notice("Resulted groups_packages_hash to implement:")
 notice($group_packages_hash)
-validate($group_packages_hash)
+validate_hash($group_packages_hash)
 
-#create_resources(package,$static_packages_hash)
-#create_resources(package, $group_packages_hash)
+create_resources(package, $static_packages_hash)
+create_resources(package, $group_packages_hash)
 
-
-
-
-
-
-
-
-
-
-
-
-#$c1 = ['ensure','ensure','ensure']
-#notice($c1)
-#$z4 = zip($c1,$v1)
-#notice($z4)
-#notice(hash($z4))
-#
-#notice(hash($z3))
-
-
-
-
-#$a1 = any2array($static_packages)
-
-#
-#notice("any2array=== ", $a1)
-#
-#notice(hash($a1))
-#notice(hash($z1))
-#notice(hash($z2))
-#$r2=hash($z2)
-
-
-#notice(parsejson($r2))
-
-#notice(hash(keys($static_packages),values($static_packages)))
-
-#create_resources(package,$static_packages1)
-#create_resources(package,$static_packages_hash)
-
-#package { 'mc':
-
-#  ensure => latest,
-
-#}
