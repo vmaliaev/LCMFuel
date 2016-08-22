@@ -9,21 +9,18 @@
   role: ['/.*/']
   requires: [deploy_start]
   require_for: [update-packages]
-#  cross-depends:
-#    - name:
-#      role:
   parameters:
     files:
-      - src: ~/updpkgraph/common.yaml #TODO Check the path of source
-        dst: /etc/hiera/common.yaml #TODO Check the path, do we need to merge source and destination or just rewrite?
-      - src: ~/updpkgraph/packages_update.pp #TODO Check the path
-        dst: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp #TODO Check the path
-      - src: ~/updpkgraph/getarrayhash.rb                                      #TODO Check the path of source
+      - src: /root/LCMFuel/updpkgraph/common.yaml
+        dst: /etc/hiera/common.yaml
+      - src: /root/LCMFuel/updpkgraph/packages_update.pp
+        dst: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp
+      - src: /root/LCMFuel/updpkgraph/getarrayhash.rb
         dst: /var/lib/puppet/lib/puppet/parser/functions/getarrayhash.rb
-      - src: ~/updpkgraph/getpackagegrouphash.rb                               #TODO Check the path of source
+      - src: /root/LCMFuel/updpkgraph/getpackagegrouphash.rb
         dst: /var/lib/puppet/lib/puppet/parser/functions/getpackagegrouphash.rb
-#  permissions: '0600'
-#  dir_permissions: '0700'
+#  permissions: '0600' #TODO Check necessity
+#  dir_permissions: '0700' #TODO Check necessity
  
 
 - id: update-packages
