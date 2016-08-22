@@ -1,0 +1,7 @@
+static_versions:
+  openssh-client: '1:6.6p1-2ubuntu2.8'
+  libcurl3 : '7.35.0-1ubuntu2.8'
+  mc : latest
+group_versions:
+  ^apache2.*$ : '2.4.7-1ubuntu4.13'
+  ^grub.*$ : latest
