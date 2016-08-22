@@ -1,0 +1,42 @@
+# A custom graph is covering a US: (https://mirantis.jira.com/browse/BC-260?page=com.atlassian.jira.plugin.system.issuetabpanels%3Aall-tabpanel)
+#
+#
+
+
+- id: update-packges-cp-files
+  type: copy_files
+  version: 2.1.0
+  role: ['/.*/']
+  requires: [deploy_start]
+  require_for: [update-packages]
+#  cross-depends:
+#    - name:
+#      role:
+  parameters:
+    files:
+      - src: ~/updpkgraph/common.yaml #TODO Check the path of source
+        dst: /etc/hiera/common.yaml #TODO Check the path, do we need to merge source and destination or just rewrite?
+      - src: ~/updpkgraph/packages_update.pp #TODO Check the path
+        dst: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp #TODO Check the path
+      - src: ~/updpkgraph/getarrayhash.rb                                      #TODO Check the path of source
+        dst: /var/lib/puppet/lib/puppet/parser/functions/getarrayhash.rb
+      - src: ~/updpkgraph/getpackagegrouphash.rb                               #TODO Check the path of source
+        dst: /var/lib/puppet/lib/puppet/parser/functions/getpackagegrouphash.rb
+#  permissions: '0600'
+#  dir_permissions: '0700'
+ 
+
+- id: update-packages
+  type: puppet
+  version: 2.1.0
+  role: ['/.*/']
+  requires: [update-packges-cp-files]
+  requires_for: [deploy_end]
+  parameters:
+    puppet_manifest: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp #TODO Check the path
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+    strategy:
+      type: parallel
+ 
