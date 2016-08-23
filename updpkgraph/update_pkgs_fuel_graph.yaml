@@ -1,7 +1,4 @@
-# A custom graph is covering a US: (https://mirantis.jira.com/browse/BC-260?page=com.atlassian.jira.plugin.system.issuetabpanels%3Aall-tabpanel)
-#
-#
-
+# A custom graph is covering a US: (https://mirantis.jira.com/browse/BC-260)
 
 - id: update-packges-cp-files
   type: copy_files
@@ -12,15 +9,13 @@
   parameters:
     files:
       - src: /root/LCMFuel/updpkgraph/common.yaml
-        dst: /etc/hiera/common.yaml
+        dst: /etc/hiera/override/common.yaml
       - src: /root/LCMFuel/updpkgraph/packages_update.pp
         dst: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp
       - src: /root/LCMFuel/updpkgraph/getarrayhash.rb
         dst: /var/lib/puppet/lib/puppet/parser/functions/getarrayhash.rb
       - src: /root/LCMFuel/updpkgraph/getpackagegrouphash.rb
         dst: /var/lib/puppet/lib/puppet/parser/functions/getpackagegrouphash.rb
-#  permissions: '0600' #TODO Check necessity
-#  dir_permissions: '0700' #TODO Check necessity
  
 
 - id: update-packages
