@@ -16,7 +16,9 @@ fill_template()
 {
    PWD1=`echo ${PWD} | sed  's/[/]/\\\\&/g'`
    sed   "s/\${src_path}/${PWD1}/g" update_pkgs_fuel_graph.template >update_pkgs_fuel_graph.yaml
-    
+
+   [ $reboot -eq 0 ] && sed "s/\${reboot_task}//g" -i update_pkgs_fuel_graph.yaml 
+
    sed -E 's/\$\{reboot_task\}/\
 - id: reboot_nodes\
   type: reboot\

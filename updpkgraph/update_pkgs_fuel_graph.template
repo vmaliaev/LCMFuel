@@ -1,6 +1,6 @@
 # A custom graph template is covering a US: (https://mirantis.jira.com/browse/BC-260)
 
-- id: update-packges-cp-files
+- id: update-packages-cp-files
   type: copy_files
   version: 2.1.0
   role: ['/.*/']
@@ -21,8 +21,8 @@
   type: puppet
   version: 2.1.0
   role: ['/.*/']
-  requires: [update-packges-cp-files]
-  requires_for: [deploy_end]
+  requires: [update-packages-cp-files]
+  required_for: [deploy_end]
   parameters:
     puppet_manifest: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp
     puppet_modules: /etc/puppet/modules
