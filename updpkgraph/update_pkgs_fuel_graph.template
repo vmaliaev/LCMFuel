@@ -1,0 +1,34 @@
+# A custom graph template is covering a US: (https://mirantis.jira.com/browse/BC-260)
+
+- id: update-packges-cp-files
+  type: copy_files
+  version: 2.1.0
+  role: ['/.*/']
+  requires: [deploy_start]
+  require_for: [update-packages]
+  parameters:
+    files:
+      - src: ${src_path}/common.yaml
+        dst: /etc/hiera/override/common.yaml
+      - src: ${src_path}/packages_update.pp
+        dst: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp
+      - src: ${src_path}/getarrayhash.rb
+        dst: /var/lib/puppet/lib/puppet/parser/functions/getarrayhash.rb
+      - src: ${src_path}/getpackagegrouphash.rb
+        dst: /var/lib/puppet/lib/puppet/parser/functions/getpackagegrouphash.rb
+
+- id: update-packages
+  type: puppet
+  version: 2.1.0
+  role: ['/.*/']
+  requires: [update-packges-cp-files]
+  requires_for: [deploy_end]
+  parameters:
+    puppet_manifest: /etc/fuel/cluster/{CLUSTER_ID}/packages_update.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 3600
+    cwd: /
+    strategy:
+      type: parallel
+ 
+${reboot_task}
