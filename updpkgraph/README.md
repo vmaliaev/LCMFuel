@@ -34,22 +34,16 @@ group_versions:
 
 Make all the needed changes in `common.yaml`
 
-Run the script:
-
-"./packages_update.sh [-d] -e ENV [-t GRAPH_TYPE]  [-r ROLE [ROLE ...]] [-n NODE [NODE ...]] [--reboot]"
-
+ Run the script: 
+```
+./packages_update.sh [-d] -e ENV [-t GRAPH_TYPE]  [-r ROLE [ROLE ...]] [-n NODE [NODE ...]] [--reboot]
 -e - environment id, choose the id from output of 'fuel2 env list'; mandatory
-
 -d - debug mode
-
 -t - graph type, point it only if you want to use particular graph_type
-
 -r - role(s)
-
 -n - node(s)
-
 --reboot - reboot nodes after package update
-
+```
 It is possible to use only roles or nodes, or combination of roles and nodes.
 If no roles and nodes are pointed then all nodes will be updated
 
