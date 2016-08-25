@@ -1,7 +1,7 @@
 # Update packages on roles (FUEL LCM Approach)
 
 ### About
-It is possible to update/install any package(s) on any node(s) inside the cloud by using Fuel client. Automation script in this repo forms up fuel-cli command ready to execute. 
+It is possible to update/install any package(s) on any node(s) inside the cloud by using Fuel client. Automation script in this repo creates a Fuel graph, uploads it to nailgun and forms up fuel-cli command ready to execute. 
 
 ### Requirements
 Deployed Fuel 9.0 (Mitaka) Master Node
@@ -30,14 +30,32 @@ group_versions:
 ```
 
 ##Usage
-"git clone https://github.com/vmaliaev/LCMFuel/tree/master/updpkgraph && cd updpkgraph"
+"git clone https://github.com/vmaliaev/LCMFuel && cd ./LCMFuel/updpkgraph"
 
 Make all the needed changes in `common.yaml`
 
-Load custom graph in Fuel:
-Example: 
-`fuel2 graph upload --env 36 --type upd_test3 --file update_pkgs_fuel_graph.yaml`
+Run the script:
+"./packages_update.sh [-d] -e ENV [-t GRAPH_TYPE]  [-r ROLE [ROLE ...]] [-n NODE [NODE ...]] [--reboot]"
+-e - environment id, choose the id from output of 'fuel2 env list'; mandatory
+-d - debug mode
+-t - graph type, point it only if you want to use particular graph_type
+-r - role(s)
+-n - node(s)
+--reboot - reboot nodes after package update
 
-Run packages_update.sh:
-Example:
-`./packages_update.sh -e 36  -t upd_test3 -r compute lcm -n 123 321 222`
+It is possible to use only roles or nodes, or combination of roles and nodes.
+If no roles and nodes are pointed then all nodes will be updated
+
+Example: "./packages_update.sh -d -e 36 -t upd_test -r compute swift -n 103 --reboot"
+
+#How to check results
+tailf /var/log/remote/node-XX.domain.tld/puppet-apply.log or /var/log/puppet.log on a node
+tailf /var/log/astute/astute.log
+2016-08-25 12:07:23 WARNING [6000] 06b30a47-b4de-4108-ade8-c3c445f44131: Failed to run shell stat --printf='%Y' /proc/1 on node 129. Error will not raise because shell was run without check
+2016-08-25 12:07:23 DEBUG [6000] Cluster[]: Process node: Node[virtual_sync_node]
+2016-08-25 12:07:23 DEBUG [6000] Cluster[]: Start processing all nodes
+2016-08-25 12:07:23 DEBUG [6000] Cluster[]: Process node: Node[129]
+2016-08-25 12:07:23 DEBUG [6000] Node[129]: Node 129: task reboot_nodes, task status running
+
+
+tailf /var/log/dpkg.log
