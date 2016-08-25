@@ -36,8 +36,8 @@ Make all the needed changes in `common.yaml`
 
 Run the script: 
 ```
-        ./packages_update.sh [-d] -e ENV [-t GRAPH_TYPE]  [-r ROLE [ROLE ...]] [-n NODE [NODE ...]] [--reboot]
-  	-e - environment id, choose the id from output of 'fuel2 env list'; mandatory
+	./packages_update.sh [-d] -e ENV [-t GRAPH_TYPE]  [-r ROLE [ROLE ...]] [-n NODE [NODE ...]] [--reboot]
+	-e - environment id, choose the id from output of 'fuel2 env list'; mandatory
   	-d - debug mode
   	-t - graph type, point it only if you want to use particular graph_type
   	-r - role(s)
@@ -52,6 +52,7 @@ If no roles and nodes are pointed then all nodes will be updated
 ```
 ./packages_update.sh -d -e 36 -t upd_test -r compute swift -n 103 --reboot
 ```
+Script outputs contain a fuel-cli command which can be copy/pasted and executed further.
 
 ###How to check results
 Check tasks status:
@@ -72,7 +73,9 @@ For example astute.log (during target node reboot):
 ```
 Regarding puppet errors it is useful to check puppet logs on remotely or on target nodes:
 
-```tailf /var/log/remote/node-XX.domain.tld/puppet-apply.log or /var/log/puppet.log on a node```
+```
+tailf /var/log/remote/node-XX.domain.tld/puppet-apply.log or /var/log/puppet.log on a node
+```
 
 All the changes in versions of packets are placed in dpkg.log
 ```
