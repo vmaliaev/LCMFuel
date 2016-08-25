@@ -78,4 +78,8 @@ if [ "x${roles}" != 'x' ] ; then rolenodes=`fuel2 node list | grep -w $roles | a
 rolenodes=`echo $rolenodes | tr -s '\n' ' '`
 [ $DEBUG -eq 1 ] && echo "Node list matched by roles="$rolenodes
 
-echo "fuel2 graph execute --env $env --type $graph -n $rolenodes$nodes"
+rns="${rolenodes}${nodes}"
+rns=${rns/ /}
+if [[ -n "${rns}" ]] ; then rolenodes="-n "${rolenodes} ; fi
+
+echo "fuel2 graph execute --env $env --type $graph $rolenodes$nodes"
