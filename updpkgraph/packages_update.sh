@@ -31,8 +31,7 @@ fill_template()
     timeout: 3600\
     strategy:\
       type: parallel\
-      amount: 1/' -i update_pkgs_fuel_graph.yaml #>update_pkgs_fuel_graph.yaml
-
+      amount: 1/' -i update_pkgs_fuel_graph.yaml
 }
 
 
