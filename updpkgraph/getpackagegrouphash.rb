@@ -15,7 +15,7 @@ module Puppet::Parser::Functions
     
       case lookupvar("osfamily")
       when "Debian"
-        p_list = %x`dpkg -l | awk -F" " '{print $2}' | #{grep_expr}`
+        p_list = %x`dpkg -l | grep -E "^[ a-z]{3}\s" | awk -F" " '{print $2}' | #{grep_expr}`
       when "RedHat"
         p_list = %x`rpm -qa | #{grep_expr}`
       end
