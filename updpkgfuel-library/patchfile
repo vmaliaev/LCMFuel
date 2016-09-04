@@ -1,0 +1,247 @@
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/comp_catalog.rb /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/comp_catalog.rb
+--- /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/comp_catalog.rb	1970-01-01 00:00:00.000000000 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/comp_catalog.rb	2016-09-04 13:37:49.002600225 +0000
+@@ -0,0 +1,15 @@
++module Puppet::Parser::Functions
++  newfunction(:comp_catalog, :type => :rvalue, :doc => <<-'ENDHEREDOC')  do |args|
++    Whether package names from hash are in the puppet catalog
++    ENDHEREDOC
++
++    resource_type = "package"
++    args[0].each {|elem|
++      catalog_resource = compiler.findresource(resource_type, elem)
++      if catalog_resource 
++       return 1 
++      end
++    }
++    return nil
++  end
++end
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getarrayhash.rb /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getarrayhash.rb
+--- /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getarrayhash.rb	1970-01-01 00:00:00.000000000 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getarrayhash.rb	2016-09-04 13:37:49.010600107 +0000
+@@ -0,0 +1,14 @@
++module Puppet::Parser::Functions
++  newfunction(:getarrayhash, :type=>:rvalue, :doc=> <<-'ENDHEREDOC') do |args|
++    Creates an array of hashes with keys as args[0] and values as args[1][].
++    Attention! args[0] is a constant, not the array.
++    For example:
++      args[0]="ensure"
++      args[1]=["1ubuntu2.3", "1ubuntu3.4", "latest"]
++      result is [{"ensure" => "1ubuntu2.3"},{"ensure" => "1ubuntu3.4"},{"ensure" => "latest"}]
++
++    ENDHEREDOC
++
++    Array.new(args[1].length) {  |index|  Hash[args[0], args[1][index]]  }
++  end
++end
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getpackagegrouphash.rb /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getpackagegrouphash.rb
+--- /root/fuel-library/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getpackagegrouphash.rb	1970-01-01 00:00:00.000000000 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/lib/puppet/parser/functions/getpackagegrouphash.rb	2016-09-04 13:37:49.014600047 +0000
+@@ -0,0 +1,28 @@
++module Puppet::Parser::Functions
++  newfunction(:getpackagegrouphash, :type => :rvalue, :doc => <<-'ENDHEREDOC') do |args|
++    Return a hash with package names as keys and {ensure => "version of a package"} as values.
++    The keys of input hash contains regular expressions which are used to match a list of installed packages.
++    For example:
++      Input:  {"^.*apache2-[b,d].*$" => latest}
++      Output: {
++                apache2-bin         => {ensure => latest}, 
++                apache2-data        => {ensure => latest}, }
++    ENDHEREDOC
++
++    h = Hash.new()
++    args[0].each {|key,value| 
++      grep_expr = "grep -Ew #{key}"
++    
++      case lookupvar("osfamily")
++      when "Debian"
++        p_list = %x`dpkg -l | grep -E "^[ a-z]{3}\s" | awk -F" " '{print $2}' | #{grep_expr}`
++      when "RedHat"
++        p_list = %x`rpm -qa | #{grep_expr}`
++      end
++
++      p_list.split("\n").each  {|elem| h[elem] = value unless args[1].include?(elem) }
++
++    }
++    return h
++  end
++end
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/pkgs.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/pkgs.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/pkgs.pp	1970-01-01 00:00:00.000000000 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/pkgs.pp	2016-09-04 13:34:06.005897232 +0000
+@@ -0,0 +1,29 @@
++# Forming and creating package resources to upgrade   
++                                                      
++define osnailyfacter::upgrade::pkgs () {              
++  $ensure_attribute = "ensure" # This is a parameter for package_resource
++  $static_packages  = hiera_hash('static_versions',{})
++  $group_packages   = hiera_hash('group_versions',{}) 
++  validate_hash($static_packages)                     
++  validate_hash($group_packages)                      
++                                                      
++  notice("Proceed with the following hash of packages: ")
++  notice($static_packages)                            
++  notice($group_packages)                             
++                                                      
++  # Create a hash for static_packages                 
++  $static_packages_hash = hash(zip(keys($static_packages), getarrayhash("$ensure_attribute",values($static_packages))))
++  notice("Resulted static_packages_hash to implement:")
++  notice($static_packages_hash)                       
++  validate_hash($static_packages_hash)                
++                                                      
++  # Create a hash for package groups                  
++  $initial_group_hash = getpackagegrouphash($group_packages, keys($static_packages))
++  $group_packages_hash = hash(zip(keys($initial_group_hash), getarrayhash("$ensure_attribute",values($initial_group_hash))))
++  notice("Resulted groups_packages_hash to implement:")
++  notice($group_packages_hash)                        
++  validate_hash($group_packages_hash)                 
++                                                      
++  create_resources(package, $static_packages_hash)    
++  create_resources(package, $group_packages_hash)     
++} 
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/pkg_upgrade.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/pkg_upgrade.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/pkg_upgrade.pp	2016-09-04 09:04:57.690270397 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/pkg_upgrade.pp	2016-09-04 13:35:14.552883833 +0000
+@@ -1,40 +1,34 @@
+-class osnailyfacter::upgrade::pkg_upgrade {
+-  # hardcode with retries and sleeps for resolving lock issue
+-  # should be rewritten
+-  exec { 'do_upgrade':
+-    command     => 'apt-get dist-upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"',
+-    environment => [ 'DEBIAN_FRONTEND=noninteractive' ],
+-    path        => ['/usr/bin', '/usr/local/sbin', '/usr/sbin', '/sbin', '/bin' ],
+-    timeout     => 1700,
+-    try_sleep   => 10,
+-    tries       => 5,
+-    logoutput   => true,
+-  }
+-
++# Update packages (Ubuntu case)                                                     
++class osnailyfacter::upgrade::pkg_upgrade {           
++                                                      
++  osnailyfacter::upgrade::pkgs{'do_upgrade':  }       
++                                                      
+   $corosync_roles = hiera('corosync_roles', ['primary-controller', 'controller'])
+-  if roles_include($corosync_roles) {
++  if roles_include($corosync_roles) {                 
+     $content_policy = "#!/bin/bash\n[[ \"\$1\" == \"pacemaker\" ]] && exit 101\n"
+-    $policyrc_file  = '/usr/sbin/policy-rc.d'
+-
+-    ensure_resource('file', 'create-policy-rc.d', {
+-      ensure  => present,
+-      path    => $policyrc_file,
+-      content => $content_policy,
+-      mode    => '0755',
+-      owner   => 'root',
+-      group   => 'root',
+-      before  => Exec['do_upgrade']
+-    })
++    $policyrc_file  = '/usr/sbin/policy-rc.d'         
++                                                      
++    ensure_resource('file', 'create-policy-rc.d', {   
++      ensure  => present,                             
++      path    => $policyrc_file,                      
++      content => $content_policy,                     
++      mode    => '0755',                              
++      owner   => 'root',                              
++      group   => 'root',                              
++      before  => Osnailyfacter::Upgrade::Pkgs['do_upgrade'],
++    })                                                
++                                                      
++    exec { 'remove_policy':                           
++      command => "rm -rf ${policyrc_file}",           
++      path    => '/bin',                              
++      require => Osnailyfacter::Upgrade::Pkgs['do_upgrade'],
++    }                                                 
++                                                      
++    ensure_resource('service', 'pacemaker', {         
++      ensure  => running,                             
++      require => Exec['remove_policy']                
++    })                                                
++  }                                                   
++}
+ 
+-    exec { 'remove_policy':
+-      command => "rm -rf ${policyrc_file}",
+-      path    => '/bin',
+-      require => Exec['do_upgrade'],
+-    }
+ 
+-    ensure_resource('service', 'pacemaker', {
+-      ensure  => running,
+-      require => Exec['remove_policy']
+-    })
+-  }
+-}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/restart_services.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/restart_services.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/manifests/upgrade/restart_services.pp	2016-09-04 09:04:57.690270397 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/manifests/upgrade/restart_services.pp	2016-09-04 13:34:22.229657386 +0000
+@@ -1,6 +1,16 @@
++# Restart services only if upgraded packages matches the catalog
++
+ class osnailyfacter::upgrade::restart_services {
+-  $mu_upgrade = hiera_hash('mu_upgrade', {})
+-  if $mu_upgrade['enabled'] {
+-    notify { 'restarting services': } ~> Service<||>
+-  }
++#  $mu_upgrade = hiera_hash('mu_upgrade', {})
++#  if $mu_upgrade['enabled'] {
++#    notify { 'restarting services': } ~> Service<||>
++#  }
++
++  $static_packages = hiera_hash('static_versions',{})
++  $group_packages = hiera_hash('group_versions',{}) 
++
++  $initial_group_hash = getpackagegrouphash($group_packages, {})
++  $restart_on = comp_catalog(concat(keys($static_packages),keys($initial_group_hash)))
++  if $restart_on { notify{'Restarting services': } ~> Service<||> }
++
+ }
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph_compute.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph_compute.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph_compute.pp	2016-09-04 09:04:57.694270337 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph_compute.pp	2016-09-04 13:40:08.092543462 +0000
+@@ -1,2 +1,2 @@
+ class { '::osnailyfacter::ceph::ceph_compute' :}
+-class { '::osnailyfacter::upgrade::ceph_service' :}
++class { '::osnailyfacter::upgrade::restart_services' :}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph-osd.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph-osd.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph-osd.pp	2016-09-04 09:04:57.694270337 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph-osd.pp	2016-09-04 13:40:34.900146976 +0000
+@@ -1,2 +1,2 @@
+ class { '::osnailyfacter::ceph::ceph_osd' :}
+-class { '::osnailyfacter::upgrade::ceph_service' :}
++class { '::osnailyfacter::upgrade::restart_services' :}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph_pools.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph_pools.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/ceph_pools.pp	2016-09-04 09:04:57.694270337 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/ceph_pools.pp	2016-09-04 13:40:21.484345422 +0000
+@@ -1,2 +1,2 @@
+ class { '::osnailyfacter::ceph::ceph_pools' :}
+-class { '::osnailyfacter::upgrade::ceph_service' :}
++class { '::osnailyfacter::upgrade::restart_services' :}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/mon.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/mon.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/mon.pp	2016-09-04 09:04:57.694270337 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/mon.pp	2016-09-04 13:40:44.208009093 +0000
+@@ -1,2 +1,2 @@
+ class { '::osnailyfacter::ceph::mon' :}
+-class { '::osnailyfacter::upgrade::ceph_service' :}
++class { '::osnailyfacter::upgrade::restart_services' :}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/radosgw.pp /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/radosgw.pp
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/ceph/radosgw.pp	2016-09-04 09:04:57.694270337 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/ceph/radosgw.pp	2016-09-04 13:39:55.132735112 +0000
+@@ -1,2 +1,2 @@
+ class { '::osnailyfacter::ceph::radosgw' :}
+-class { '::osnailyfacter::upgrade::ceph_service' :}
++class { '::osnailyfacter::upgrade::restart_services' :}
+diff -Naur /root/fuel-library/deployment/puppet/osnailyfacter/modular/upgrade/tasks.yaml /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/upgrade/tasks.yaml
+--- /root/fuel-library/deployment/puppet/osnailyfacter/modular/upgrade/tasks.yaml	2016-09-04 09:04:57.714270040 +0000
++++ /root/fuel-library-new/deployment/puppet/osnailyfacter/modular/upgrade/tasks.yaml	2016-09-04 13:35:58.556233255 +0000
+@@ -5,7 +5,7 @@
+   requires: [setup_repositories]
+   required_for: [fuel_pkgs]
+   condition:
+-    yaql_exp: $.get('mu_upgrade', {}).get('enabled')
++#    yaql_exp: $.get('mu_upgrade', {}).get('enabled')
+   parameters:
+     puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/upgrade/pkg_upgrade.pp
+     puppet_modules: /etc/puppet/modules
