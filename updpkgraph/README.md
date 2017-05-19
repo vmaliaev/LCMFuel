@@ -6,7 +6,7 @@ It is possible to update/install any package(s) on any node(s) inside the cloud 
 ### Requirements
 Deployed Fuel 9.0 (Mitaka) Master Node
 
-###Use cases to apply:
+### Use cases to apply:
 	packages/1-role,
 	packages/multi-roles,
 	packages/all-roles,
